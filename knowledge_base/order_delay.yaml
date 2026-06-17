@@ -1,0 +1,27 @@
+metadata:
+  id: order_delay
+  incident_type: order_delay
+  business_domain: order_fulfillment
+  summary: >
+    Covers order fulfilment delays across the RosettaNet B2B partner network.
+    Applies when a customer order has not been dispatched, is stuck in processing,
+    or has exceeded the committed delivery SLA. Investigates inventory reservation
+    failures, warehouse allocation backlogs, and partner dispatch acknowledgements.
+  scenarios:
+    - Customer order not dispatched within SLA window
+    - Warehouse allocation pending or failed for order items
+    - RosettaNet PIP 3A4 purchase order acknowledgement not received from partner
+    - Inventory reserved but shipment not initiated by fulfilment partner
+    - Order stuck in processing queue with no status update
+  tags: [order, fulfillment, delay, dispatch, warehouse, rosettanet, 3a4, partner, SLA]
+
+possible_operational_causes:
+  enterprise_data_points_to_be_checked:
+    - Inventory reservation status for the order
+    - Available warehouse stock for the items in the order
+    - Pending allocation requests for this order
+
+  short_term_fix:
+    - If inventory reservation is pending, expedite the reservation process
+    - If warehouse stock is insufficient, communicate estimated delivery timeline
+    - If allocation backlog, prioritize the order in the queue

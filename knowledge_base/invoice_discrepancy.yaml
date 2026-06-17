@@ -1,0 +1,27 @@
+metadata:
+  id: invoice_discrepancy
+  incident_type: invoice_discrepancy
+  business_domain: accounts_payable
+  summary: >
+    Covers invoice discrepancies and billing disputes in the RosettaNet B2B network.
+    Applies when the invoiced amount does not match the purchase order, when a 3-way
+    match fails between PO, goods receipt, and invoice, or when a partner invoice
+    has been rejected or is pending approval beyond the payment terms window.
+  scenarios:
+    - Invoice amount does not match the original purchase order value
+    - 3-way match failure between PO, goods receipt note, and partner invoice
+    - Duplicate invoice received from fulfilment or inventory partner
+    - Invoice rejected by accounts payable with no resolution
+    - Payment terms breached — invoice overdue beyond agreed net days
+  tags: [invoice, billing, discrepancy, 3way_match, payment, accounts_payable, partner, rosettanet]
+
+possible_operational_causes:
+  enterprise_data_points_to_be_checked:
+    - Invoice status and approval state in ERP
+    - Corresponding purchase order line items and amounts
+    - Goods receipt note status for the delivery
+
+  short_term_fix:
+    - If 3-way match failed, identify the mismatched line and raise a dispute notice
+    - If invoice is duplicate, reject and notify partner via RosettaNet PIP 3B2
+    - If payment terms breached, escalate to accounts payable manager

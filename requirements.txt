@@ -1,0 +1,10 @@
+requests
+requests_auth
+langchain
+langgraph
+langchain-openai
+openai
+pyyaml
+slack_sdk
+requests
+python-dotenv

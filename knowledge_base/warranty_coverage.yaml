@@ -1,0 +1,28 @@
+metadata:
+  id: warranty_coverage
+  incident_type: warranty_coverage
+  business_domain: after_sales_service
+  summary: >
+    Covers warranty claim disputes and coverage eligibility issues for products
+    supplied through OEM and distributor partners in the RosettaNet B2B network.
+    Applies when a customer warranty claim is rejected, when coverage boundaries
+    between OEM and distributor responsibility are disputed, or when a warranty
+    replacement shipment has not been initiated within the agreed SLA.
+  scenarios:
+    - Customer warranty claim rejected with no clear reason
+    - Dispute over whether OEM or distributor partner is responsible for coverage
+    - Warranty replacement order not raised after claim approval
+    - Product serial number not found in warranty registry
+    - Warranty period expired but customer disputes the coverage end date
+  tags: [warranty, coverage, claim, OEM, distributor, replacement, serial_number, partner]
+
+possible_operational_causes:
+  enterprise_data_points_to_be_checked:
+    - Product serial number warranty registration status
+    - Warranty coverage period start and end dates
+    - Responsible partner assignment — OEM vs distributor
+
+  short_term_fix:
+    - If serial number unregistered, verify purchase record and manually register
+    - If coverage boundary disputed, escalate to partner contract manager
+    - If replacement not raised, create warranty replacement order immediately
