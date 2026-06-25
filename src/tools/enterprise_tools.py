@@ -38,6 +38,10 @@
 # ============================================================
 
 from langchain.tools import tool
+from tools.inventory_tools import (
+    get_warehouse_availability,
+    get_allocation_queue_details,
+)
 
 
 # ============================================================
@@ -690,3 +694,107 @@ def get_claim_status(serial_number: str):
         "sla_due_date": None,
         "sla_breached": False,
     }
+
+
+# ============================================================
+# TOOL REGISTRY — maps each YAML domain to relevant tools
+#
+# Purpose:
+#   Rather than passing all 20 tools to the reasoning LLM on
+#   every investigation (which is token-expensive), this registry
+#   lets the caller pass only the tools relevant to the selected
+#   YAML domain. The reasoning LLM still decides which tools to
+#   call, but it does so from a focused, relevant set rather than
+#   a full list of 20.
+#
+#   This directly addresses the OpenAI TPM rate limit issue seen
+#   when running multiple investigation tests back-to-back — each
+#   investigation uses fewer input tokens when only domain-relevant
+#   tools are included.
+#
+# Usage:
+#   from tools.enterprise_tools import get_tools_for_domain
+#   tools = get_tools_for_domain("shipment_tracking")
+# ============================================================
+
+def get_tools_for_domain(yaml_id: str) -> list:
+    """
+    Return the list of tools relevant to a specific YAML knowledge
+    base domain. The reasoning LLM will only see and call tools
+    from this list during the investigation.
+
+    Parameters
+    ----------
+    yaml_id : str
+        The id field from the YAML metadata block.
+        Example: "shipment_tracking", "payment_hold"
+
+    Returns
+    -------
+    list
+        List of @tool functions relevant to this domain.
+        Falls back to all tools if the domain is not recognised.
+    """
+    registry = {
+        "order_delay": [
+            get_warehouse_availability,
+            get_allocation_queue_details,
+            get_stock_levels,
+        ],
+        "invoice_discrepancy": [
+            get_invoice_status,
+            get_three_way_match_result,
+            get_payment_allocation_status,
+        ],
+        "warranty_coverage": [
+            get_warranty_record,
+            get_claim_status,
+        ],
+        "shipment_tracking": [
+            get_shipment_status,
+            get_proof_of_delivery,
+        ],
+        "returns_and_rma": [
+            get_rma_status,
+            get_credit_note_status,
+        ],
+        "payment_hold": [
+            get_account_credit_status,
+            get_payment_allocation_status,
+        ],
+        "inventory_shortage": [
+            get_stock_levels,
+            get_replenishment_orders,
+            get_warehouse_availability,
+            get_allocation_queue_details,
+        ],
+        "supplier_compliance": [
+            get_edi_transaction_status,
+            get_partner_gateway_status,
+        ],
+        "pricing_discrepancy": [
+            get_contract_price,
+            get_applied_price_on_order,
+        ],
+        "customs_and_compliance": [
+            get_customs_clearance_status,
+            get_trade_document_status,
+        ],
+    }
+
+    tools = registry.get(yaml_id)
+    if not tools:
+        # Unknown domain — return all tools as fallback
+        return [
+            get_warehouse_availability, get_allocation_queue_details,
+            get_shipment_status, get_proof_of_delivery,
+            get_rma_status, get_credit_note_status,
+            get_account_credit_status, get_payment_allocation_status,
+            get_stock_levels, get_replenishment_orders,
+            get_edi_transaction_status, get_partner_gateway_status,
+            get_contract_price, get_applied_price_on_order,
+            get_customs_clearance_status, get_trade_document_status,
+            get_invoice_status, get_three_way_match_result,
+            get_warranty_record, get_claim_status,
+        ]
+    return tools
