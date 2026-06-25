@@ -826,15 +826,22 @@ no preamble, no markdown fences:
         card.append(_section_header("SUGGESTED SHORT-TERM FIX", "🛠 "))
         card.append(_wrap(analysis.get("short_term_fix", "N/A")))
 
-        # ── Status & Human Action Buttons ─────────────────────────────
-        # The double line visually separates the analysis from the action zone
+
+        # ── Status & Human Response prompt ────────────────────────────
+        # No action buttons or command keywords — the human should
+        # respond in their own natural language. The agent reads their
+        # reply and figures out the intent. Listing keywords like
+        # "say APPROVE" signals a rigid command system and contradicts
+        # the Human as Companion model.
         card.append("\n" + "═" * (_CARD_WIDTH + 2))
-        card.append("  ⏳  AWAITING HUMAN REVIEW")
+        card.append("  ⏳  AWAITING YOUR REVIEW")
         card.append("═" * (_CARD_WIDTH + 2))
         card.append(
-            "\n  [ ✅ APPROVE ]  [ ✏️  OVERRIDE ]  "
-            "[ 🔺 ESCALATE ]  [ ❓ MORE DATA ]"
+            "\n  Please review the analysis above and reply in your "
+            "own words — share your thoughts, ask for more information, "
+            "or let me know if anything needs to be corrected."
         )
+
 
         # ── Footer ────────────────────────────────────────────────────
         card.append("\n  " + "─" * _CARD_WIDTH)
@@ -1148,7 +1155,7 @@ partners via RosettaNet.
 
 You already produced an initial analysis. A human operations agent has
 reviewed it and is asking for additional information before they can
-make a decision. They are NOT disputing your existing findings — they
+make a decision. They are NOT disputing your existing findings -- they
 simply want you to investigate further.
 
 You have access to diagnostic tools. Use them to gather the additional
@@ -1156,25 +1163,38 @@ enterprise data the human is asking for, and incorporate it alongside
 your original findings.
 
 Investigation approach:
-  - Read your ORIGINAL analysis below — do not contradict it without
+  - Read your ORIGINAL analysis below -- do not contradict it without
     new evidence; you are extending it, not starting over
-  - Read the human's specific request carefully — call tools that would
+  - Read the human's specific request carefully -- call tools that would
     answer exactly what they asked for
   - Combine the original findings with any new findings into one
     complete, updated analysis
 
+IMPORTANT -- be honest about knowledge gaps:
+  If the human is asking for information that:
+    (a) none of your available tools can provide, OR
+    (b) is not covered in the YAML knowledge base
+  then you MUST say so clearly. Do NOT re-run the same tools and
+  return the same data with no new information -- that is misleading.
+  Instead, state explicitly in your findings that this information
+  is not available in the current knowledge base or tool set, and
+  suggest what data source or tool would be needed to answer it.
+  Example: "Invoice details were requested but no invoice lookup
+  tool is currently available. To answer this, an invoice_details
+  tool connected to the ERP system would be needed."
+
 Once the additional investigation is complete, respond ONLY in this
-exact JSON format — no preamble, no markdown fences:
+exact JSON format -- no preamble, no markdown fences:
 {
   "operational_issue": "<one line description of the most likely issue>",
   "findings": [
-    "<finding 1 — include original findings plus any new ones>",
-    "<finding 2>",
+    "<finding 1 -- include original findings plus any new ones>",
+    "<finding 2 -- if requested info was unavailable, state that clearly>",
     "<finding 3>"
   ],
   "reasoning_steps": [
-    "<step 1 — what you checked and what it indicated>",
-    "<step 2>",
+    "<step 1 -- what you checked and what it indicated>",
+    "<step 2 -- if you could not find requested info, explain why>",
     "<step 3>"
   ],
   "root_cause": "<specific root cause based on all evidence so far>",
@@ -1188,6 +1208,7 @@ exact JSON format — no preamble, no markdown fences:
         data_request:      str,
         selected_yamls:    list[dict],
         tools:             list,
+        user_query:        str = "",
     ) -> dict:
         """
         Re-run investigation when the human wants more data, without
@@ -1251,12 +1272,15 @@ exact JSON format — no preamble, no markdown fences:
         messages = [
             SystemMessage(content=self._REINVESTIGATION_SYSTEM_PROMPT),
             HumanMessage(content=(
+                f"ORIGINAL CUSTOMER COMPLAINT:\n\"{user_query}\"\n\n"
                 f"YOUR ORIGINAL ANALYSIS:\n{original_analysis_text}\n\n"
                 f"HUMAN'S REQUEST FOR MORE DATA:\n\"{data_request}\"\n\n"
                 f"OPERATIONAL KNOWLEDGE:\n{knowledge_context}\n\n"
-                "Continue your investigation. Call tools to gather the "
-                "additional information requested, then produce your "
-                "updated final JSON analysis."
+                "Continue your investigation. When calling tools, use the "
+                "exact order number or reference from the original complaint "
+                "above -- do NOT use placeholder values like '12345'. "
+                "Call tools to gather the additional information requested, "
+                "then produce your updated final JSON analysis."
             ))
         ]
 

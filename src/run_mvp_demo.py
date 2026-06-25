@@ -83,7 +83,10 @@ TOOLS = [
 # force escalation. This is the cap we agreed on during MVP design —
 # without it, a human could in theory keep asking for more data forever
 # and the demo (or the real system) would never reach a decision.
-MAX_REINVESTIGATION_ROUNDS = 2
+# No cap on re-investigation rounds — open-ended collaboration
+# is the core design of the Human as Companion model.
+# The terminal demo loop runs until the human approves or
+# corrects the RCA, however many rounds that takes.
 
 
 def _ask_human_for_reply(round_number: int) -> str:
@@ -183,11 +186,10 @@ def run_demo() -> None:
     print("  ✅ Posted to Slack")
 
     # ── Step 4: Loop — simulate human reply, classify, route ─────────
-    # This loop mirrors exactly the decision flow we agreed on for the
-    # MVP: approve finalizes immediately, request_more_data loops back
-    # (up to MAX_REINVESTIGATION_ROUNDS times), correct_rca_fix applies
-    # the override and finalizes, and unclear asks again without taking
-    # any other action.
+    # This loop mirrors the Human as Companion decision flow:
+    # approve finalizes immediately, request_more_data loops back
+    # (unlimited rounds — open-ended collaboration), correct_rca_fix
+    # applies the override and finalizes, unclear asks for clarification.
     reinvestigation_rounds = 0
 
     while True:
@@ -224,23 +226,11 @@ def run_demo() -> None:
         elif feedback["intent"] == "request_more_data":
             reinvestigation_rounds += 1
 
-            if reinvestigation_rounds > MAX_REINVESTIGATION_ROUNDS:
-                # This is the escalation cap we agreed on during MVP
-                # design — after enough rounds of "still need more
-                # data", the system should stop looping forever and
-                # instead tell a human this needs manual escalation.
-                print(f"\n  [INFO] Reached the {MAX_REINVESTIGATION_ROUNDS}-round "
-                      f"re-investigation limit.")
-                slack_client.send_message(
-                    f"🔺 *Escalation needed for {DEMO_INCIDENT_NUMBER}*\n"
-                    f"AI has re-investigated {MAX_REINVESTIGATION_ROUNDS} times "
-                    f"without reaching approval. Manual review required."
-                )
-                print("  Escalation message sent. Demo ending without finalization.")
-                return
+            # No escalation cap — keep collaborating until the human
+            # approves or provides a direct correction.
+            pass
 
-            print(f"\n  Re-investigating (round {reinvestigation_rounds} of "
-                  f"{MAX_REINVESTIGATION_ROUNDS})...")
+            print(f"\n  Re-investigating (round {reinvestigation_rounds})...")
             analysis = agent.re_investigate_with_feedback(
                 original_analysis=analysis,
                 data_request=feedback["extracted_data_request"],

@@ -108,13 +108,15 @@ class TestPresentToHuman(unittest.TestCase):
         for section in required_sections:
             self.assertIn(section, self.card, f"Missing section: {section}")
 
-    def test_contains_action_buttons(self):
+    def test_contains_human_review_prompt(self):
         """
-        All four human action options must be present.
-        These are the interface between the AI investigation and human decision.
+        The card must contain a natural language prompt inviting the
+        human to respond freely — not rigid action buttons or keywords.
+        The Human as Companion model relies on free-text responses
+        classified by the LLM, not hard-coded command parsing.
         """
-        for action in ["APPROVE", "OVERRIDE", "ESCALATE", "MORE DATA"]:
-            self.assertIn(action, self.card, f"Missing action: {action}")
+        self.assertIn("AWAITING YOUR REVIEW", self.card)
+        self.assertIn("respond naturally", self.card)
 
     def test_full_card_prints_cleanly(self):
         """

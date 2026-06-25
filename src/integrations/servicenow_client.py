@@ -206,49 +206,77 @@ class ServiceNowClient:
     #   the setup effort low for a demo environment.
     # ============================================================
 
-    def get_new_incidents(self, max_results: int = 10):
+    def get_new_incidents(
+        self,
+        assignment_group: str = None,
+        max_results: int = 10,
+    ):
         """
-        Fetch incidents that are in the "New" state and have not yet
-        been picked up by the AI agent.
+        Fetch incidents that are assigned to the AI agent's assignment
+        group, are in "New" state, and have not yet been picked up.
+
+        Using an assignment group as the primary filter is the
+        production-correct approach — it means only incidents that
+        have been deliberately routed to the AI agent are processed,
+        rather than every New incident in the entire instance. This
+        mirrors how real ITSM teams use assignment groups as queues,
+        with routing rules deciding which incidents go to which group.
 
         Parameters
         ----------
+        assignment_group : str, optional
+            The name of the ServiceNow assignment group to filter on.
+            Example: "AI Ops Agent"
+            If None or empty, the group filter is skipped and ALL
+            New incidents are returned — useful for testing but not
+            recommended for production.
+
         max_results : int
-            Maximum number of incidents to return in one call.
-            Keeping this small (default 10) means a single poll cycle
-            cannot accidentally pull hundreds of incidents and overwhelm
-            the agent or the Slack channel with messages all at once.
+            Maximum number of incidents to return per poll cycle.
+            Keeping this small (default 10) prevents a single cycle
+            from overwhelming the agent with too many concurrent
+            investigations.
 
         Returns
         -------
         list[dict]
-            A list of incident records (each one a dict, exactly like
-            the dicts returned by get_incident_by_number()). Returns an
-            empty list if no new incidents are found — never None, so
-            calling code can always safely loop over the result with
-            a "for incident in incidents:" statement without first
-            checking if it is None.
+            A list of incident dicts. Returns an empty list (never
+            None) if no matching incidents are found.
         """
 
         # --------------------------------------------------------
-        # ServiceNow query syntax (sysparm_query) builds up filter
-        # conditions separated by "^". This reads as:
-        #   state=1               → only incidents in "New" state
-        #                            (1 is ServiceNow's standard code
-        #                            for New; this can vary by instance
-        #                            configuration, so double check
-        #                            against your own instance if the
-        #                            numbers don't match)
-        #   ^work_notesNOT LIKE... → exclude incidents whose work notes
-        #                            already contain our "picked up"
-        #                            marker text
+        # Build the ServiceNow sysparm_query string.
+        #
+        # Conditions are chained with "^" (AND logic). The query:
+        #   state=1
+        #       → only "New" incidents
+        #   ^assignment_group.name=AI Ops Agent
+        #       → only incidents in our specific assignment group.
+        #         Using the dot-walk "assignment_group.name" lets us
+        #         filter by the group's display name rather than its
+        #         sys_id, which makes the query human-readable and
+        #         portable across instances.
+        #   ^work_notesNOT LIKE{pickup_marker}
+        #       → exclude incidents already picked up in a previous
+        #         cycle (defence against double-processing if the
+        #         state update failed for any reason)
         # --------------------------------------------------------
 
         pickup_marker = "AI Agent: investigation started"
 
+        # Base query — always filter on New state and pickup marker
+        query = f"state=1^work_notesNOT LIKE{pickup_marker}"
+
+        # Add assignment group filter if one was provided.
+        # The dot-walk syntax "assignment_group.name" traverses the
+        # relationship from the incident table to the sys_user_group
+        # table and matches on the group's name field directly.
+        if assignment_group:
+            query += f"^assignment_group.name={assignment_group}"
+
         url = (
             f"{self.instance_url}/api/now/table/incident"
-            f"?sysparm_query=state=1^work_notesNOT LIKE{pickup_marker}"
+            f"?sysparm_query={query}"
             f"&sysparm_limit={max_results}"
         )
 
@@ -345,6 +373,97 @@ class ServiceNowClient:
 
         response.raise_for_status()
 
+        return True
+
+
+
+    # ============================================================
+    # Update Incident State
+    # ============================================================
+    #
+    # Purpose:
+    #   Change the state of a ServiceNow incident to reflect where
+    #   it is in its lifecycle. This is standard ITSM practice —
+    #   an incident sitting in "New" state while being actively
+    #   investigated is misleading to anyone looking at the queue.
+    #   Changing it to "In Progress" immediately signals that the
+    #   incident is being worked.
+    #
+    # ServiceNow standard incident state codes:
+    #   1 = New           ← our query filters on this
+    #   2 = In Progress   ← set this when agent picks up
+    #   3 = On Hold
+    #   6 = Resolved
+    #   7 = Closed
+    #
+    #   These are standard across most ServiceNow instances.
+    #   If your instance uses custom state values, update the
+    #   STATE_CODES dict below accordingly.
+    #
+    # Future expansion:
+    #   As the agent's lifecycle management matures, this method
+    #   will be called at other points too — e.g. "Resolved" when
+    #   finalize_to_servicenow() completes successfully. For now,
+    #   the MVP only sets "In Progress" at pickup time.
+    # ============================================================
+
+    # Standard ServiceNow incident state codes.
+    # Defined as a class-level constant so calling code can use
+    # ServiceNowClient.STATE_IN_PROGRESS rather than remembering
+    # magic numbers — this makes the intent clear at the call site.
+    STATE_NEW         = "1"
+    STATE_IN_PROGRESS = "2"
+    STATE_ON_HOLD     = "3"
+    STATE_RESOLVED    = "6"
+    STATE_CLOSED      = "7"
+
+    def update_state(self, sys_id: str, state: str) -> bool:
+        """
+        Update the state of a ServiceNow incident.
+
+        Parameters
+        ----------
+        sys_id : str
+            ServiceNow's internal unique ID for the incident.
+            Same sys_id used by update_work_notes().
+
+        state : str
+            The new state code as a string. Use the class constants
+            for clarity:
+                ServiceNowClient.STATE_IN_PROGRESS  → "2"
+                ServiceNowClient.STATE_RESOLVED     → "6"
+            rather than passing raw numbers, so the intent is clear
+            to anyone reading the calling code.
+
+        Returns
+        -------
+        bool
+            True if the update succeeded.
+
+        Raises
+        ------
+        requests.exceptions.HTTPError
+            If the API request fails.
+        """
+
+        url = f"{self.instance_url}/api/now/table/incident/{sys_id}"
+
+        # We PATCH only the "state" field — same HTTP PATCH pattern
+        # as update_work_notes(), which updates only "work_notes".
+        # PATCH updates only the fields you specify, leaving all
+        # other incident fields untouched.
+        payload = {"state": state}
+
+        response = requests.patch(
+            url,
+            auth=self.auth,
+            headers=self.headers,
+            json=payload
+        )
+
+        response.raise_for_status()
+
+        print(f"  ✅ Incident {sys_id} state updated to {state}")
         return True
 
 
