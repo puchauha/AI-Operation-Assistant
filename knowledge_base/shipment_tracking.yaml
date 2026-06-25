@@ -1,0 +1,60 @@
+metadata:
+  id: shipment_tracking
+  incident_type: shipment_tracking
+  business_domain: logistics_and_transportation
+  affected_systems: [carrier_API, WMS, customs_broker, RosettaNet, TMS]
+  summary: >
+    Covers shipment tracking failures, carrier delays, and last-mile delivery issues
+    in the B2B partner network. Applies when a customer reports that a dispatched
+    order has not arrived, cannot be tracked, or has been reported as lost, damaged,
+    or returned. The customer sees only the symptom — the AI agent investigates the
+    underlying carrier, customs, and logistics system data to identify the operational
+    cause.
+  scenarios:
+    - Order dispatched but customer has not received it
+    - Customer says package has not arrived on the expected date
+    - Tracking link provided but shows no movement or updates
+    - Delivery was attempted but customer was not notified
+    - Customer received damaged goods
+    - Customer says they never received the package but carrier says delivered
+    - Shipment is taking much longer than the quoted delivery time
+    - Customer has not received any shipping confirmation or tracking details
+    - Part of the order arrived but the rest is missing
+    - Customer received someone else's order by mistake
+  related_domains: [order_delay, customs_and_compliance, returns_and_rma]
+  negative_indicators:
+    - Order has not yet been dispatched — use order_delay instead
+    - Customer wants to return received goods — use returns_and_rma instead
+    - Shipment held specifically for customs reasons — consider customs_and_compliance
+  typical_resolution_time: "4-24 hours for carrier exceptions, 3-7 days for lost shipment claims"
+  tags: [shipment, tracking, carrier, delivery, logistics, last_mile, customs,
+         freight, transport, courier, cross_border, proof_of_delivery]
+
+possible_operational_causes:
+  technical_investigation_steps:
+    - Check if a tracking number was generated and transmitted to the customer
+    - Check carrier tracking API for last scan event — location, timestamp, exception code
+    - Check if carrier has raised a delivery exception such as wrong address, refused, or no access
+    - Check proof of delivery status — was a signature obtained and from whom
+    - Check if shipment is held at customs — import duty assessment or missing documentation
+    - Check if shipment was split across multiple consignments and only part was delivered
+    - Check carrier booking confirmation — was the collection actually completed on the agreed date
+    - Check if shipment was returned to sender and the reason recorded by carrier
+    - Check RosettaNet Ship Notice (PIP 3B3) acknowledgement from carrier partner
+
+  resolution_guidance:
+    process_actions:
+      - If no tracking events, contact carrier operations immediately with booking reference
+      - If stuck at hub more than 48 hours, raise carrier escalation and give customer revised ETA
+      - If customs hold, engage freight forwarder to supply missing documentation urgently
+      - If damaged, raise carrier damage claim and arrange replacement or credit note
+      - If delivered but disputed, obtain carrier POD document and share with customer
+    data_corrections:
+      - If wrong delivery address in system caused failed delivery, correct address and rebook
+      - If tracking number not sent to customer due to notification config error, resend immediately
+      - If shipment linked to wrong order in TMS, correct the reference and update customer
+      - If carrier account number incorrect on booking causing rejection, correct and rebook
+    escalation_triggers:
+      - If shipment confirmed lost, initiate carrier insurance claim and arrange priority replacement
+      - If carrier repeatedly missing SLA on this lane, escalate to carrier account manager
+      - If dangerous goods misclassification caused hold, escalate to compliance team

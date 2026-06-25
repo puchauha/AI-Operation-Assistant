@@ -2,27 +2,52 @@ metadata:
   id: warranty_coverage
   incident_type: warranty_coverage
   business_domain: after_sales_service
+  affected_systems: [ERP, service_management, product_registry, field_service]
   summary: >
-    Covers warranty claim disputes and coverage eligibility issues for products
-    supplied through OEM and distributor partners in the RosettaNet B2B network.
-    Applies when a customer warranty claim is rejected, when coverage boundaries
-    between OEM and distributor responsibility are disputed, or when a warranty
-    replacement shipment has not been initiated within the agreed SLA.
+    Covers warranty claim disputes, coverage rejections, and after-sales service
+    failures in the B2B partner network. Applies when a customer reports that a
+    warranty claim was rejected without adequate reason, that a product fault is
+    not being resolved, or that they are unclear about what their warranty covers.
+    The customer experiences a post-sale support failure — the AI agent investigates
+    the warranty records, product registration, claim history, and OEM/distributor
+    coverage terms to identify the issue.
   scenarios:
-    - Customer warranty claim rejected with no clear reason
-    - Dispute over whether OEM or distributor partner is responsible for coverage
-    - Warranty replacement order not raised after claim approval
-    - Product serial number not found in warranty registry
-    - Warranty period expired but customer disputes the coverage end date
-  tags: [warranty, coverage, claim, OEM, distributor, replacement, serial_number, partner]
+    - Customer's warranty claim was rejected but they believe they are still covered
+    - Customer reporting a fault with a product and asking if it is under warranty
+    - Product replaced under warranty but the replacement is also faulty
+    - Customer says warranty repair is taking much longer than promised
+    - Customer not sure who is responsible for the warranty — supplier or manufacturer
+  related_domains: [returns_and_rma, invoice_discrepancy]
+  negative_indicators:
+    - Customer wants to return goods for a refund rather than repair — use returns_and_rma instead
+    - Customer disputing invoice charges — use invoice_discrepancy instead
+  typical_resolution_time: "24-48 hours for claim assessment, 5-10 days for repair or replacement"
+  tags: [warranty, claim, coverage, after_sales, repair, replacement, OEM,
+         distributor, fault, product, registration, service_level]
 
 possible_operational_causes:
-  enterprise_data_points_to_be_checked:
-    - Product serial number warranty registration status
-    - Warranty coverage period start and end dates
-    - Responsible partner assignment — OEM vs distributor
+  technical_investigation_steps:
+    - Check product registration status — is the customer's unit registered to them
+    - Check warranty start date and remaining coverage period against purchase date
+    - Check warranty tier — manufacturer direct, distributor, or extended service contract
+    - Check claim history — previous claims, repairs, and any modifications to the unit
+    - Check if the reported fault type is covered under the applicable warranty terms
+    - Check OEM exclusion list — physical damage, misuse, and unauthorised modification are common exclusions
+    - Check repair or replacement SLA — has the committed turnaround time been breached
+    - Check if a replacement unit was dispatched and its current fulfilment status
 
-  short_term_fix:
-    - If serial number unregistered, verify purchase record and manually register
-    - If coverage boundary disputed, escalate to partner contract manager
-    - If replacement not raised, create warranty replacement order immediately
+  resolution_guidance:
+    process_actions:
+      - If wrongly rejected, reinstate the claim and arrange repair or replacement immediately
+      - If repair breaching SLA, escalate to service centre manager and update customer
+      - If replacement also faulty, escalate to quality team and prioritise resolution
+      - If OEM coverage unclear, contact OEM warranty team directly for ruling
+    data_corrections:
+      - If product registration date wrong in system due to data entry error, correct it and reprocess claim
+      - If warranty tier recorded incorrectly, update to the correct tier and re-evaluate claim
+      - If unit registered to wrong customer after a resale, update registration with proof of purchase
+      - If serial number mismatch between claim and registry, verify and correct the record
+    escalation_triggers:
+      - If same product model generating repeated warranty claims, escalate to quality and product team
+      - If OEM refusing valid claim, escalate to supplier relationship manager
+      - If customer threatening legal action, escalate to customer service director immediately

@@ -2,26 +2,49 @@ metadata:
   id: order_delay
   incident_type: order_delay
   business_domain: order_fulfillment
+  affected_systems: [ERP, WMS, RosettaNet, carrier_booking]
   summary: >
     Covers order fulfilment delays across the RosettaNet B2B partner network.
-    Applies when a customer order has not been dispatched, is stuck in processing,
-    or has exceeded the committed delivery SLA. Investigates inventory reservation
-    failures, warehouse allocation backlogs, and partner dispatch acknowledgements.
+    Applies when a customer reports that an order has not arrived by the expected
+    date, has not been dispatched, or has gone silent with no status update.
+    The customer experiences a fulfilment failure — the AI agent investigates
+    inventory reservation, warehouse allocation, and partner dispatch systems
+    to identify the operational cause of the delay.
   scenarios:
-    - Customer order not dispatched within SLA window
-    - Warehouse allocation pending or failed for order items
-    - RosettaNet PIP 3A4 purchase order acknowledgement not received from partner
-    - Inventory reserved but shipment not initiated by fulfilment partner
-    - Order stuck in processing queue with no status update
+    - Order placed but not yet dispatched beyond the expected dispatch date
+    - Customer has not received their order by the promised delivery date
+    - Order status has not changed for several days with no communication
+    - Customer chasing an order they placed some time ago with no update
+    - Customer says they urgently need the order and wants to know what is happening
+  related_domains: [shipment_tracking, inventory_shortage, payment_hold, supplier_compliance]
+  negative_indicators:
+    - Customer disputing invoice amount — use invoice_discrepancy instead
+    - Customer reporting damaged goods — use shipment_tracking instead
+    - Customer wanting to return goods — use returns_and_rma instead
+  typical_resolution_time: "2-8 hours for allocation issues, 24-48 hours if stock shortage"
   tags: [order, fulfillment, delay, dispatch, warehouse, rosettanet, 3a4, partner, SLA]
 
 possible_operational_causes:
-  enterprise_data_points_to_be_checked:
-    - Inventory reservation status for the order
-    - Available warehouse stock for the items in the order
-    - Pending allocation requests for this order
+  technical_investigation_steps:
+    - Check inventory reservation status for the order items in the warehouse system
+    - Check available warehouse stock for each line item on the order
+    - Check pending allocation requests queue — how many orders are ahead of this one
+    - Check allocation failure reason if reservation has been attempted and failed
+    - Check RosettaNet PIP 3A4 purchase order acknowledgement status from fulfilment partner
+    - Check if dispatch instruction was sent to warehouse and acknowledged
+    - Check carrier booking status — has a collection been scheduled and confirmed
 
-  short_term_fix:
-    - If inventory reservation is pending, expedite the reservation process
-    - If warehouse stock is insufficient, communicate estimated delivery timeline
-    - If allocation backlog, prioritize the order in the queue
+  resolution_guidance:
+    process_actions:
+      - If inventory reservation is pending, expedite the reservation process
+      - If allocation backlog, prioritise this order in the queue
+      - If dispatch instruction not sent, trigger it immediately
+      - If carrier collection not booked, book it and notify customer of dispatch date
+    data_corrections:
+      - If order stuck due to incorrect delivery address in system, correct and reprocess
+      - If wrong warehouse assigned to fulfil the order, reassign and re-trigger dispatch
+      - If customer account configuration missing a default carrier, add it and retry
+    escalation_triggers:
+      - If stock genuinely insufficient with no inbound PO, escalate to procurement
+      - If partner PIP 3A4 timed out repeatedly, escalate to EDI/integration team
+      - If order value above contract SLA penalty threshold, escalate to account manager

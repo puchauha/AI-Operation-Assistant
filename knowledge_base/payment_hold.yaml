@@ -1,0 +1,60 @@
+metadata:
+  id: payment_hold
+  incident_type: payment_hold
+  business_domain: finance_and_credit
+  affected_systems: [ERP, accounts_receivable, credit_management, payment_gateway]
+  summary: >
+    Covers payment holds, credit limit blocks, and account suspension issues that
+    prevent orders from being processed or dispatched. Applies when a customer
+    reports that an order cannot be placed, is stuck in processing, or has been
+    cancelled without explanation — and the underlying cause is a financial hold
+    rather than a stock or logistics issue. The customer experiences this as an
+    order problem; the AI agent investigates the financial systems to identify the
+    credit, payment, or account status causing the block.
+  scenarios:
+    - Customer is unable to place a new order — system rejects at checkout
+    - Order placed successfully but stuck in processing with no dispatch
+    - Customer received a cancellation with no explanation
+    - Customer account has been suspended without prior warning
+    - Customer says their payment was taken but order was not fulfilled
+    - Customer asking why their credit limit was reduced
+    - Customer's standing order or scheduled delivery has stopped without notice
+    - New customer order rejected at partner gateway
+    - Customer unable to access their account or portal
+    - Customer disputes an overdue balance they believe has already been paid
+  related_domains: [invoice_discrepancy, order_delay, pricing_discrepancy]
+  negative_indicators:
+    - Customer disputing an invoice amount — use invoice_discrepancy instead
+    - Customer reporting order not dispatched with no financial context — use order_delay instead
+    - Customer reporting price charged differently from contract — use pricing_discrepancy instead
+  typical_resolution_time: "1-4 hours if unallocated payment found, 24-48 hours for credit review"
+  tags: [payment, hold, credit, finance, account, suspension, order_block,
+         credit_limit, overdue, invoice, ERP, partner]
+
+possible_operational_causes:
+  technical_investigation_steps:
+    - Check customer account status in ERP — active, on hold, suspended, or closed
+    - Check credit limit utilisation — current exposure versus approved credit limit
+    - Check for overdue invoices breaching payment terms on the account
+    - Check if a manual credit hold has been placed by finance and by whom
+    - Check payment allocation — has a recent payment been received but not yet applied to invoices
+    - Check if a disputed invoice is causing the hold and its current resolution status
+    - Check if partner credit insurance has flagged or reduced cover for this customer
+    - Check if order value exceeds the single-order credit limit threshold
+    - Check if a direct debit or standing payment mandate has lapsed or failed
+
+  resolution_guidance:
+    process_actions:
+      - If overdue invoices confirmed, contact customer to arrange immediate payment
+      - If credit limit breached, contact credit manager for a temporary limit increase
+      - If standing order payment failed, contact customer to update payment details
+      - If account suspended in error, reverse suspension and notify customer with apology
+    data_corrections:
+      - If payment received but not allocated, locate the remittance and apply it to outstanding invoices
+      - If credit limit set incorrectly in ERP after contract renewal, update to the agreed limit
+      - If account status wrong due to migration error, correct the status flag in ERP
+      - If wrong payment terms recorded on the account, correct and recalculate overdue position
+    escalation_triggers:
+      - If customer disputes the overdue balance and claims payment was made, escalate to credit controller with proof
+      - If credit insurance cover has been withdrawn, escalate to finance director before releasing any orders
+      - If account suspension causing customer SLA breach, escalate to account manager immediately

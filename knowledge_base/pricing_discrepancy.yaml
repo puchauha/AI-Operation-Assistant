@@ -1,0 +1,60 @@
+metadata:
+  id: pricing_discrepancy
+  incident_type: pricing_discrepancy
+  business_domain: contract_pricing
+  affected_systems: [ERP, price_management, contract_management, accounts_receivable]
+  summary: >
+    Covers pricing discrepancies, contract price violations, and billing disputes
+    where the amount charged differs from what the customer expected based on their
+    agreed contract, promotional pricing, or quoted price. Applies when a customer
+    reports being overcharged, seeing unexpected surcharges, or receiving an invoice
+    that does not match their purchase order due to a pricing reason. The customer
+    experiences this as a billing problem — the AI agent investigates the pricing
+    engine, contract records, and ERP billing configuration to find the root cause.
+  scenarios:
+    - Customer says they were charged more than the agreed contract price
+    - Invoice received but the price is higher than the quote provided
+    - Customer's promotional or volume discount was not applied
+    - Price changed on renewal without the customer being notified
+    - Customer being charged for items or services they did not order
+    - Unexpected surcharge or fee appearing on the invoice
+    - Currency on the invoice does not match the agreed trading currency
+    - Different price charged for the same item on different orders this month
+    - Customer's negotiated price not applied after a contract renewal
+    - Customer reporting that a price correction credit was not applied to next invoice
+  related_domains: [invoice_discrepancy, payment_hold, supplier_compliance]
+  negative_indicators:
+    - Customer disputing quantities or goods on invoice — use invoice_discrepancy instead
+    - Customer account blocked from ordering — use payment_hold instead
+    - Pricing issue caused by wrong data from supplier — use supplier_compliance instead
+  typical_resolution_time: "4-8 hours for price list correction, 1-3 days for contract review cases"
+  tags: [pricing, contract, discount, billing, invoice, surcharge, overcharge,
+         ERP, price_list, volume_discount, currency, promotional]
+
+possible_operational_causes:
+  technical_investigation_steps:
+    - Check the customer's active contract price list in ERP — effective dates and per-SKU prices
+    - Check which price list version was applied to this specific order at time of booking
+    - Check if a volume or promotional discount is configured and the qualifying threshold met
+    - Check if the customer has reached the volume tier that triggers the contracted discount
+    - Check if contract was renewed and correct pricing applied from the right effective date
+    - Check currency configuration on the customer account — invoicing currency versus contract currency
+    - Check if a manual price override was applied on the order and by whom
+    - Check if a surcharge rule has been applied — freight, fuel, handling, or minimum order value
+    - Check if a previous price correction credit note was raised and correctly allocated
+
+  resolution_guidance:
+    process_actions:
+      - If discount not applied due to threshold not yet met, explain position to customer and confirm when it triggers
+      - If contract not updated after renewal, apply correct pricing retrospectively for the affected period
+      - If surcharge legitimate but not communicated, apologise and provide written notice for future orders
+    data_corrections:
+      - If wrong price list applied to the order, raise credit note for overcharge and reissue invoice at correct price
+      - If price list has incorrect unit price due to data entry error, correct the price master and reissue affected invoices
+      - If currency set incorrectly on customer account, correct the invoicing currency and reissue
+      - If volume discount threshold configured incorrectly, correct the discount rule and apply retrospectively
+      - If previous credit note not allocated, locate it and apply to the outstanding balance
+    escalation_triggers:
+      - If pricing dispute relates to a contract term that is genuinely ambiguous, escalate to commercial director
+      - If customer claims a verbal price agreement not captured in ERP, escalate to account manager to verify
+      - If systematic overcharging affecting multiple customers on same price list, escalate to pricing team urgently

@@ -1,0 +1,59 @@
+metadata:
+  id: inventory_shortage
+  incident_type: inventory_shortage
+  business_domain: inventory_management
+  affected_systems: [WMS, ERP, demand_planning, procurement]
+  summary: >
+    Covers stock availability failures, backorder situations, and inventory
+    discrepancies that prevent order fulfilment. Applies when a customer reports
+    that an item they ordered is unavailable, their order has been partially
+    fulfilled, or they have been waiting significantly longer than expected with
+    no update. The customer sees a fulfilment failure — the AI agent investigates
+    the inventory, demand planning, and procurement systems to identify the stock
+    position and recovery timeline.
+  scenarios:
+    - Customer ordered an item shown as available but now told it is out of stock
+    - Only part of the order was delivered — remaining items not sent
+    - Customer has been waiting much longer than the quoted lead time
+    - Item was in stock when ordered but backorder notification received later
+    - Customer asking when their backordered item will be available
+    - Substitute product sent without customer approval
+    - Customer's regular stocked item is suddenly unavailable with no explanation
+    - Order confirmed but fulfilment partner says stock not available at their location
+    - Customer received fewer units than ordered with no short-shipment notice
+    - Item discontinued without customer being notified in advance
+  related_domains: [order_delay, supplier_compliance]
+  negative_indicators:
+    - Order stuck in processing due to financial hold — use payment_hold instead
+    - Order not dispatched but stock is available — use order_delay instead
+  typical_resolution_time: "Same day if inter-warehouse transfer possible, 3-14 days if awaiting replenishment"
+  tags: [inventory, stock, shortage, backorder, fulfilment, availability,
+         warehouse, demand, procurement, substitute, discontinued]
+
+possible_operational_causes:
+  technical_investigation_steps:
+    - Check current available stock level for the ordered SKU across all warehouse locations
+    - Check safety stock level and whether it has been breached
+    - Check open purchase orders for this SKU — expected receipt date from supplier
+    - Check demand forecast versus current stock position and days of cover remaining
+    - Check if stock is reserved for other orders placed ahead of this customer
+    - Check warehouse management system for any stock discrepancy or unexplained write-off
+    - Check if the item has been discontinued or superseded by a new SKU
+    - Check if a substitute SKU was automatically applied and whether it is customer-approved
+    - Check the backorder queue position for this customer's specific order
+
+  resolution_guidance:
+    process_actions:
+      - If stock at alternative location, arrange inter-warehouse transfer as priority
+      - If replenishment PO exists, expedite with supplier and give customer revised ETA
+      - If item discontinued, proactively suggest approved substitute and obtain customer approval before shipping
+      - If short-shipped, despatch remainder as a priority consignment when stock arrives
+    data_corrections:
+      - If stock discrepancy found between WMS and physical count, trigger stock reconciliation and correct the record
+      - If substitute SKU applied without approval mapping, remove and contact customer for authorisation
+      - If item shown as discontinued in error, correct the product status and restore to active
+      - If demand forecast causing stock to be incorrectly reserved, adjust the forecast parameters
+    escalation_triggers:
+      - If no inbound PO exists and customer order is time-critical, escalate to procurement for emergency order
+      - If same SKU causing repeated shortages, escalate to demand planning manager for root cause review
+      - If supplier repeatedly failing to deliver on PO, escalate to supplier relationship manager

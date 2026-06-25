@@ -49,6 +49,26 @@ from tools.inventory_tools import (
     get_warehouse_availability,
     get_allocation_queue_details,
 )
+from tools.enterprise_tools import (
+    get_shipment_status,
+    get_proof_of_delivery,
+    get_rma_status,
+    get_credit_note_status,
+    get_account_credit_status,
+    get_payment_allocation_status,
+    get_stock_levels,
+    get_replenishment_orders,
+    get_edi_transaction_status,
+    get_partner_gateway_status,
+    get_contract_price,
+    get_applied_price_on_order,
+    get_customs_clearance_status,
+    get_trade_document_status,
+    get_invoice_status,
+    get_three_way_match_result,
+    get_warranty_record,
+    get_claim_status,
+)
 
 # ════════════════════════════════════════════════════════════════════
 # CONFIGURATION
@@ -65,8 +85,35 @@ except KeyError as e:
 
 
 TOOLS = [
+    # Inventory and order fulfilment
     get_warehouse_availability,
     get_allocation_queue_details,
+    get_stock_levels,
+    get_replenishment_orders,
+    # Shipment and delivery
+    get_shipment_status,
+    get_proof_of_delivery,
+    # Returns and RMA
+    get_rma_status,
+    get_credit_note_status,
+    # Finance and credit
+    get_account_credit_status,
+    get_payment_allocation_status,
+    # Supplier and EDI compliance
+    get_edi_transaction_status,
+    get_partner_gateway_status,
+    # Pricing
+    get_contract_price,
+    get_applied_price_on_order,
+    # Customs and trade
+    get_customs_clearance_status,
+    get_trade_document_status,
+    # Invoice
+    get_invoice_status,
+    get_three_way_match_result,
+    # Warranty
+    get_warranty_record,
+    get_claim_status,
 ]
 
 # ════════════════════════════════════════════════════════════════════

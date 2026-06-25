@@ -48,7 +48,21 @@ sys.path.insert(0, os.path.dirname(__file__))
 from agents.supervisor_agent import SupervisorAgent
 from integrations.servicenow_client import ServiceNowClient
 from integrations.slack_client import SlackClient
-from tools.inventory_tools import get_warehouse_availability, get_allocation_queue_details
+from tools.inventory_tools import (
+    get_warehouse_availability,
+    get_allocation_queue_details,
+)
+from tools.enterprise_tools import (
+    get_shipment_status, get_proof_of_delivery,
+    get_rma_status, get_credit_note_status,
+    get_account_credit_status, get_payment_allocation_status,
+    get_stock_levels, get_replenishment_orders,
+    get_edi_transaction_status, get_partner_gateway_status,
+    get_contract_price, get_applied_price_on_order,
+    get_customs_clearance_status, get_trade_document_status,
+    get_invoice_status, get_three_way_match_result,
+    get_warranty_record, get_claim_status,
+)
 
 dotenv.load_dotenv()
 
@@ -75,8 +89,16 @@ except KeyError as e:
 DEMO_INCIDENT_NUMBER = os.environ.get("SERVICENOW_TEST_INCIDENT", "INC0010002")
 
 TOOLS = [
-    get_warehouse_availability,
-    get_allocation_queue_details,
+    get_warehouse_availability, get_allocation_queue_details,
+    get_stock_levels, get_replenishment_orders,
+    get_shipment_status, get_proof_of_delivery,
+    get_rma_status, get_credit_note_status,
+    get_account_credit_status, get_payment_allocation_status,
+    get_edi_transaction_status, get_partner_gateway_status,
+    get_contract_price, get_applied_price_on_order,
+    get_customs_clearance_status, get_trade_document_status,
+    get_invoice_status, get_three_way_match_result,
+    get_warranty_record, get_claim_status,
 ]
 
 # Maximum number of re-investigation rounds before we stop looping and

@@ -1,0 +1,61 @@
+metadata:
+  id: supplier_compliance
+  incident_type: supplier_compliance
+  business_domain: b2b_partner_integration
+  affected_systems: [EDI_gateway, RosettaNet, ERP, B2B_message_queue]
+  summary: >
+    Covers B2B partner integration failures, EDI and RosettaNet communication
+    breakdowns, and supplier non-compliance issues that impact order processing.
+    Applies when a customer reports that an order was not received by the supplier,
+    a confirmation was never sent, or a transaction appears to have gone missing
+    between systems. The customer has no visibility into EDI or RosettaNet
+    infrastructure — the AI agent investigates the B2B messaging, EDI transaction
+    logs, and partner gateway status to find where the integration failed.
+  scenarios:
+    - Order submitted but supplier says they never received it
+    - Customer placed order but received no order confirmation from supplier
+    - Supplier sent a delivery but it does not match what was ordered
+    - Invoice received from supplier does not match the agreed purchase order
+    - Supplier stopped sending shipment notifications
+    - Automated orders that used to work are suddenly failing
+    - Customer's system shows order sent but supplier's system shows nothing received
+    - Supplier acknowledged order but shipped wrong items or quantities
+    - Supplier invoicing in a different currency or at a different price than agreed
+    - Recurring orders with a partner have stopped processing without explanation
+  related_domains: [order_delay, invoice_discrepancy, pricing_discrepancy]
+  negative_indicators:
+    - Issue is with physical delivery of goods — use shipment_tracking instead
+    - Customer disputing invoice amount — use invoice_discrepancy instead
+    - Customer reporting price charged differently from contract — use pricing_discrepancy instead
+  typical_resolution_time: "2-8 hours for EDI config fixes, 24-48 hours for partner gateway issues"
+  tags: [supplier, EDI, RosettaNet, B2B, partner, integration, compliance,
+         purchase_order, acknowledgement, PIP, trading_partner, gateway]
+
+possible_operational_causes:
+  technical_investigation_steps:
+    - Check EDI 850 purchase order transmission log — was the message sent successfully
+    - Check for EDI 855 purchase order acknowledgement — did the partner respond within SLA
+    - Check RosettaNet PIP 3A4 status — acknowledgement received within timeout window
+    - Check B2B message queue for stuck, failed, or rejected transactions
+    - Check partner gateway connectivity and last successful handshake timestamp
+    - Check EDI mapping configuration version — has partner recently changed their message spec
+    - Check if trading partner AS2 certificates or connection credentials have expired
+    - Check EDI transaction control numbers for duplicates or sequence gaps indicating missed messages
+    - Check ISA and GS envelope identifiers — correct partner sender and receiver IDs configured
+
+  resolution_guidance:
+    process_actions:
+      - If EDI 855 not received within SLA, re-transmit 850 and alert EDI support team
+      - If partner gateway unreachable, contact partner EDI team and switch to manual purchase order as interim
+      - If partner sent wrong items, raise formal discrepancy notice and arrange correction shipment
+      - If recurring orders stopped, manually trigger next cycle and investigate the scheduling rule
+    data_corrections:
+      - If AS2 certificate expired, renew the certificate and re-establish the secure connection
+      - If trading partner ISA identifier changed at their end, update our EDI configuration to match
+      - If EDI mapping broken due to partner spec change, engage EDI team to update the map and reprocess
+      - If partner test and production environment flags swapped, correct the environment setting
+      - If sequence number gap detected, resend missing transactions in correct sequence order
+    escalation_triggers:
+      - If partner gateway unreachable for more than 4 hours, escalate to EDI operations manager
+      - If partner repeatedly sending non-compliant messages, escalate to supplier compliance team
+      - If data loss suspected across multiple transactions, escalate to B2B integration architect

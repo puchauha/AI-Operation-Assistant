@@ -2,26 +2,51 @@ metadata:
   id: invoice_discrepancy
   incident_type: invoice_discrepancy
   business_domain: accounts_payable
+  affected_systems: [ERP, accounts_payable, RosettaNet, EDI_gateway]
   summary: >
     Covers invoice discrepancies and billing disputes in the RosettaNet B2B network.
-    Applies when the invoiced amount does not match the purchase order, when a 3-way
-    match fails between PO, goods receipt, and invoice, or when a partner invoice
-    has been rejected or is pending approval beyond the payment terms window.
+    Applies when a customer reports that the amount they have been billed does not
+    match what they agreed, an invoice has been disputed or rejected, or a payment
+    has been made but not acknowledged. The customer experiences a billing problem —
+    the AI agent investigates the ERP invoice, purchase order matching, and goods
+    receipt records to identify the specific discrepancy.
   scenarios:
-    - Invoice amount does not match the original purchase order value
-    - 3-way match failure between PO, goods receipt note, and partner invoice
-    - Duplicate invoice received from fulfilment or inventory partner
-    - Invoice rejected by accounts payable with no resolution
-    - Payment terms breached — invoice overdue beyond agreed net days
+    - Customer says the invoice amount is higher than the purchase order they raised
+    - Customer received an invoice for goods they have not yet received
+    - Customer made a payment but it has not been applied to their account
+    - Customer received a duplicate invoice for the same order
+    - Customer's invoice was rejected with no explanation of why
+  related_domains: [pricing_discrepancy, payment_hold, order_delay, supplier_compliance]
+  negative_indicators:
+    - Customer disputing the contracted price itself — use pricing_discrepancy instead
+    - Customer account blocked from placing orders — use payment_hold instead
+    - Customer asking about a return credit — use returns_and_rma instead
+  typical_resolution_time: "4-24 hours for matching issues, 2-5 days for formal disputes"
   tags: [invoice, billing, discrepancy, 3way_match, payment, accounts_payable, partner, rosettanet]
 
 possible_operational_causes:
-  enterprise_data_points_to_be_checked:
-    - Invoice status and approval state in ERP
-    - Corresponding purchase order line items and amounts
-    - Goods receipt note status for the delivery
+  technical_investigation_steps:
+    - Check invoice status and approval state in the ERP system
+    - Check corresponding purchase order line items, quantities, and agreed unit prices
+    - Check goods receipt note status — have the goods been confirmed as received
+    - Run 3-way match between purchase order, goods receipt note, and invoice
+    - Check if a credit note has been raised and whether it has been applied
+    - Check payment allocation — has a recent payment been received but not matched
+    - Check for duplicate invoice reference numbers on the same purchase order
+    - Check RosettaNet PIP 3B2 invoice acknowledgement for any rejection reason codes
 
-  short_term_fix:
-    - If 3-way match failed, identify the mismatched line and raise a dispute notice
-    - If invoice is duplicate, reject and notify partner via RosettaNet PIP 3B2
-    - If payment terms breached, escalate to accounts payable manager
+  resolution_guidance:
+    process_actions:
+      - If 3-way match failed, identify the mismatched line and raise a dispute notice to partner
+      - If duplicate invoice confirmed, reject it and notify partner via RosettaNet PIP 3B2
+      - If payment terms breached, escalate to accounts payable manager for resolution
+      - If invoice rejected without reason, contact partner to obtain rejection details
+    data_corrections:
+      - If payment received but not allocated, locate the payment and apply it to the invoice
+      - If goods receipt note not recorded despite delivery, create the GRN and re-run match
+      - If wrong purchase order linked to invoice, correct the reference and reprocess
+      - If customer account payment terms wrong in ERP, correct and reissue invoice
+    escalation_triggers:
+      - If invoice dispute cannot be resolved within payment terms window, escalate to finance director
+      - If partner repeatedly sending incorrect invoices, escalate to partner relationship manager
+      - If suspected fraudulent invoice, escalate to finance compliance team immediately

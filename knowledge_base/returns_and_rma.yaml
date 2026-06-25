@@ -1,0 +1,58 @@
+metadata:
+  id: returns_and_rma
+  incident_type: returns_and_rma
+  business_domain: reverse_logistics
+  affected_systems: [ERP, WMS, carrier_booking, accounts_receivable]
+  summary: >
+    Covers return merchandise authorisation (RMA) failures, credit note disputes,
+    and reverse logistics issues in the B2B partner network. Applies when a customer
+    wants to return goods, has not received a credit note after a return, or reports
+    that returned items have not been collected or acknowledged. The customer describes
+    the problem in business terms — the AI agent investigates the RMA workflow, ERP
+    credit processing, and reverse logistics status to identify the cause.
+  scenarios:
+    - Customer wants to return goods but does not know how to proceed
+    - Return request submitted but no response or authorisation received
+    - Customer says items were returned but no credit note has been issued
+    - Credit note received but the amount is incorrect
+    - Returned goods collected but still showing as outstanding on customer account
+    - Customer returned faulty goods but replacement has not been sent
+    - Return collection was booked but courier never arrived to collect
+    - Customer is being charged for goods they have already returned
+    - Return authorisation expired before customer could ship the goods back
+    - Returned goods arrived at warehouse but customer account not yet credited
+  related_domains: [warranty_coverage, invoice_discrepancy, shipment_tracking]
+  negative_indicators:
+    - Customer reporting fault and wanting repair under warranty — use warranty_coverage instead
+    - Customer disputing invoice charges unrelated to a return — use invoice_discrepancy instead
+  typical_resolution_time: "24-48 hours for RMA creation, 5-10 days for credit note after receipt"
+  tags: [returns, RMA, credit_note, reverse_logistics, refund, replacement,
+         warranty, goods_return, collection, partner]
+
+possible_operational_causes:
+  technical_investigation_steps:
+    - Check if an RMA number has been created in the ERP system for this return request
+    - Check RMA approval status — pending, approved, rejected, or expired
+    - Check if a return collection has been scheduled with the carrier and confirmed
+    - Check if returned goods have been received and inspected at the returns warehouse
+    - Check credit note status in ERP — raised, approved, sent to customer, or on hold
+    - Check credit note amount against original invoice value and returned quantity
+    - Check if the customer account ledger has been updated to reflect the credit
+    - Check if a replacement order has been raised and its current fulfilment status
+    - Check RMA expiry date — has the authorisation window lapsed before goods were returned
+
+  resolution_guidance:
+    process_actions:
+      - If no RMA exists, create one immediately and send authorisation details to customer
+      - If collection not made, rebook with carrier and confirm new date with customer
+      - If credit note not issued after confirmed receipt, raise it manually and notify customer
+      - If replacement not dispatched after return confirmed, prioritise the replacement order
+    data_corrections:
+      - If credit amount wrong due to incorrect quantity recorded at goods-in, correct the receipt and reissue credit note
+      - If returned goods received but goods receipt not created in WMS, create it and trigger credit process
+      - If RMA linked to wrong original invoice, correct the reference and recalculate credit value
+      - If customer account not updated after credit note issued, manually apply credit to ledger
+    escalation_triggers:
+      - If high-value return with no goods received confirmation after 10 days, escalate to logistics manager
+      - If customer has multiple outstanding credit notes not yet issued, escalate to accounts receivable manager
+      - If returned goods assessment shows damage caused by customer misuse, escalate to commercial team

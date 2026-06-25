@@ -1,0 +1,60 @@
+metadata:
+  id: customs_and_compliance
+  incident_type: customs_and_compliance
+  business_domain: trade_compliance
+  affected_systems: [customs_broker_portal, freight_forwarder, ERP, trade_compliance]
+  summary: >
+    Covers customs clearance failures, import and export documentation issues, and
+    trade compliance holds that delay or block cross-border shipments. Applies when
+    a customer reports that an international shipment is significantly delayed, stuck
+    at a border, or subject to unexpected duties or charges. The customer knows only
+    that their goods have not arrived or that they have been asked to pay unexpected
+    charges — the AI agent investigates the customs clearance status, documentation,
+    and trade compliance records to identify the specific regulatory issue.
+  scenarios:
+    - International shipment significantly delayed with no explanation
+    - Customer asked to pay unexpected import duties or taxes at delivery
+    - Goods held at border or port and customer cannot find out why
+    - Customer says shipment was returned by customs without being delivered
+    - Customer received a customs penalty notice for a shipment
+    - Export shipment stopped at origin country by authorities
+    - Customer's goods have been in transit far longer than usual for this route
+    - Customer received partial delivery — rest held at customs
+    - Customer asked for documentation they do not understand or have not received
+    - Shipment confiscated or destroyed at border without prior notice to customer
+  related_domains: [shipment_tracking, supplier_compliance]
+  negative_indicators:
+    - Delay caused by carrier rather than customs — use shipment_tracking instead
+    - Supplier documentation issue at origin before dispatch — use supplier_compliance instead
+  typical_resolution_time: "24-72 hours for documentation issues, 1-2 weeks for duty disputes"
+  tags: [customs, compliance, import, export, duties, tariff, border, clearance,
+         documentation, trade, HS_code, certificate_of_origin, sanctions, HMRC]
+
+possible_operational_causes:
+  technical_investigation_steps:
+    - Check customs clearance status at the relevant border or port authority via customs broker
+    - Check HS commodity code used on the commercial invoice — correct classification for the goods
+    - Check if certificate of origin is present and matches the declared goods origin country
+    - Check if import duty has been assessed, the amount, and whether it has been paid or is in dispute
+    - Check if an export licence is required for the product category and destination country
+    - Check if the consignee or any intermediate party appears on a denied party screening list
+    - Check commercial invoice accuracy — declared value, currency, incoterms, goods description
+    - Check packing list accuracy — whether it matches the invoice and actual shipment contents
+    - Check if a preferential trade agreement duty claim was made and whether supporting documents are in order
+
+  resolution_guidance:
+    process_actions:
+      - If duty unpaid, arrange payment via customs broker to secure immediate release of the shipment
+      - If documentation missing, supply the required documents urgently via the freight forwarder
+      - If preferential duty claim rejected, arrange payment of standard duty to release goods while preparing appeal
+      - If export stopped at origin, contact customs broker to understand the specific hold reason
+    data_corrections:
+      - If HS code incorrect on the commercial invoice, file a correction with the customs broker and resubmit the entry
+      - If declared value wrong causing duty miscalculation, submit corrected invoice and request re-assessment
+      - If certificate of origin states wrong origin country due to template error, reissue the correct certificate
+      - If goods description on invoice too vague for customs classification, reissue with precise technical description
+    escalation_triggers:
+      - If sanctions screening returns a match on the consignee, stop all action and escalate to compliance team immediately
+      - If goods seized or confiscated, escalate to legal and trade compliance team immediately
+      - If penalty notice received, escalate to trade compliance manager before responding to the authority
+      - If same customs route repeatedly causing holds, escalate to trade compliance team for lane review
